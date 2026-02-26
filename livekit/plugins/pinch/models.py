@@ -25,8 +25,7 @@ class TranslatorOptions:
         allowed_voice_types = {"clone", "female", "male"}
         if self.voice_type not in allowed_voice_types:
             raise ValueError(
-                f"voice_type must be one of {allowed_voice_types!r}, "
-                f"got {self.voice_type!r}."
+                f"voice_type must be one of {allowed_voice_types!r}, got {self.voice_type!r}."
             )
 
 

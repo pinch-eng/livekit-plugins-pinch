@@ -2,11 +2,11 @@
 
 from .models import TranscriptEvent, TranslatorOptions
 from .translator import (
-    Translator,
     PinchAuthError,
     PinchError,
     PinchRateLimitError,
     PinchSessionError,
+    Translator,
 )
 from .version import __version__
 
