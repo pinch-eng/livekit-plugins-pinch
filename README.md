@@ -1,6 +1,6 @@
 # livekit-plugins-pinch
 
-Real-time speech-to-speech translation for [LiveKit Agents](https://github.com/livekit/agents), powered by [Pinch](https://www.startpinch.com).
+Real-time voice translation for [LiveKit Agents](https://github.com/livekit/agents), powered by [Pinch](https://www.startpinch.com).
 
 ---
 
