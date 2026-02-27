@@ -9,13 +9,10 @@ import os
 import time
 from typing import Callable
 
-import aiohttp
 from livekit import rtc
 
 from .log import logger
 from .models import TranscriptEvent, TranslatorOptions
-
-_PINCH_SESSION_URL = "https://api.startpinch.com/api/beta1/session"
 
 _SAMPLE_RATE = 48_000
 _NUM_CHANNELS = 1
@@ -231,57 +228,34 @@ class Translator:
         logger.info("Pinch Translator stopped.")
 
     async def _create_session(self) -> dict:
-        headers = {
-            "Authorization": f"Bearer {self._api_key}",
-            "Content-Type": "application/json",
+        """Create a Pinch translation session via the SDK."""
+        from pinch import PinchClient, SessionParams
+        from pinch.errors import (
+            PinchAuthError as _SdkAuthError,
+            PinchError as _SdkError,
+            PinchRateLimitError as _SdkRateLimitError,
+        )
+
+        params = SessionParams(
+            source_language=self._options.source_language,
+            target_language=self._options.target_language,
+            voice_type=self._options.voice_type,
+        )
+        try:
+            client = PinchClient(api_key=self._api_key)
+            session_info = await asyncio.to_thread(client.create_session, params)
+        except _SdkAuthError as exc:
+            raise PinchAuthError(str(exc)) from exc
+        except _SdkRateLimitError as exc:
+            raise PinchRateLimitError(str(exc)) from exc
+        except _SdkError as exc:
+            raise PinchSessionError(str(exc)) from exc
+
+        return {
+            "url": session_info.url,
+            "token": session_info.token,
+            "room_name": session_info.room_name,
         }
-        body = {
-            "sourceLanguage": self._options.source_language,
-            "targetLanguage": self._options.target_language,
-            "voiceType": self._options.voice_type,
-        }
-
-        async with aiohttp.ClientSession() as http:
-            # First request — disable auto-redirects so Authorization header is preserved
-            async with http.post(
-                _PINCH_SESSION_URL,
-                headers=headers,
-                json=body,
-                allow_redirects=False,
-            ) as resp:
-                if resp.status in (301, 302, 307, 308):
-                    redirect_url = resp.headers.get("Location")
-                    logger.debug("Following redirect → %s", redirect_url)
-                else:
-                    redirect_url = None
-
-            # Second request — either the redirect target or the original URL
-            target_url = redirect_url or _PINCH_SESSION_URL
-            async with http.post(target_url, headers=headers, json=body) as resp:
-                if resp.status == 401:
-                    raise PinchAuthError(
-                        "Pinch API key rejected (HTTP 401). "
-                        "Check the PINCH_API_KEY environment variable."
-                    )
-                if resp.status == 429:
-                    raise PinchRateLimitError(
-                        "Pinch API rate limit exceeded (HTTP 429). Please wait before retrying."
-                    )
-                if resp.status == 400:
-                    raise PinchSessionError(f"Bad request (HTTP 400): {await resp.text()}")
-                if resp.status >= 500:
-                    raise PinchSessionError(
-                        f"Pinch server error (HTTP {resp.status}): {await resp.text()}"
-                    )
-                if resp.status != 200:
-                    raise PinchSessionError(
-                        f"Unexpected response (HTTP {resp.status}): {await resp.text()}"
-                    )
-
-                data = await resp.json()
-                if not all(k in data for k in ("url", "token", "room_name")):
-                    raise PinchSessionError(f"Unexpected Pinch API payload: {data!r}")
-                return data
 
     async def _connect_with_retry(self, url: str, token: str) -> rtc.Room:
         last_exc: Exception | None = None
