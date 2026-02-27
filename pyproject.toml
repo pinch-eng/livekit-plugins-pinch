@@ -29,7 +29,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "pinch-sdk>=0.1.3",
+    "pinch-sdk>=0.1.1",
     "livekit>=0.12.0",
     "livekit-agents>=0.8.0",
 ]
