@@ -13,4 +13,3 @@ dist/
 # build artifacts
 build/
 *.pyo
-```
