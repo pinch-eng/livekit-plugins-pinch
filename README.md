@@ -22,6 +22,14 @@ pip install livekit-plugins-pinch
 
 ---
 
+## Compatibility
+
+- Python >= 3.10
+- livekit >= 0.12.0
+- livekit-agents >= 0.8.0
+
+---
+
 ## Configuration
 
 You need a **Pinch API key**. Get one at the [developers portal](https://portal.startpinch.com/dashboard/developers).
